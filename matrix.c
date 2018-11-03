@@ -11,7 +11,7 @@ void gen_matrix(double *matrix, int n, int m, FILE *fp) {
     }
 	for (i = 0; i < n; i++){
 		for (j = 0; j < m; j++){
-			if (!fscanf(fp, "%lf", &matrix[n*i+j])) break;
+			if (!fscanf(fp, "%lf", &matrix[m*i+j])) break;
 			}
 	}	
     rewind(fp);

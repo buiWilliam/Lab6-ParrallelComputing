@@ -62,24 +62,39 @@ int main(int argc, char* argv[])
         double b[brows][bcols];
         double c[nrows][ncols];
         double c2[nrows][ncols];
-	gen_matrix(aa, arows, acols, fileA);
-        gen_matrix(bb, brows, bcols, fileB);
 	
         if (myid == 0) {
             printf("MatrixA\nrows=%d, cols=%d\n",arows,acols);
             i = j = 0;
             for (i = 0; i < arows; i++){
             	for (j = 0; j < acols; j++){
-                    a[i][j]=aa[arows*i+j];
+		    printf("%f\n",aa[i*acols+j]);
+                    a[i][j]=aa[i*acols+j];
+		    printf("%f\n",a[i][j]);
             	}
 	    }
             printf("\nMatrixB\nrows=%d, cols=%d\n",brows,bcols);
             i = j = 0;
-            for (i = 0; i < arows; i++){
-            	for (j = 0; j < acols; j++){
-                    b[i][j]=bb[arows*i+j];
+            for (i = 0; i < brows; i++){
+            	for (j = 0; j < bcols; j++){
+		     printf("%f\n",bb[i*bcols+j]);
+                    b[i][j]=bb[bcols*i+j];
+		    printf("%f\n",b[i][j]);
             	}
 	    }
+
+		for (i = 0; i < arows; i++){
+                        for (j = 0; j < acols; j++){
+                                printf("a[%d][%d]=%f\n",i,j,a[i][j]);
+                        }
+                }
+
+                for (i = 0; i < brows; i++){
+                        for (j = 0; j < bcols; j++){
+                                printf("b[%d][%d]=%f\n",i,j,b[i][j]);
+                        }
+                }
+
             starttime = MPI_Wtime();
             offset = 0;
             numworkers = numprocs-1;
@@ -116,11 +131,14 @@ int main(int argc, char* argv[])
             for (i=0; i<nrows; i++){
                 for (j=0; j<ncols; j++){
                     c2[i][j] = 0;
-                    for (k=0; k<nrows; k++){
-                        c2[i][j] += aa[arows*i+k] * bb[brows*k+j];
+		    printf("c[%d][%d]= ",i,j);
+                    for (k=0; k<acols; k++){
+			printf("%f * %f + ", aa[acols*i+k], bb[bcols*k+j]);
+                        c2[i][j] += aa[acols*i+k] * bb[bcols*k+j];
                     }
-
+		    printf("\n");
                 }
+		
             }
 
             int isSame = 1; 
@@ -140,12 +158,13 @@ int main(int argc, char* argv[])
             fileC = fopen("MatrixC.txt", "w");
             char space[] = " ";
             char nline[] = "\n";
-            char s[20];
-	    fwrite("rows(%d) cols(%d)\n",nrows,ncols,filec);
+            char s[sizeof(double)*nrows];
+	    sprintf(s,"rows(%d) cols(%d)\n",nrows,ncols);
+	    fwrite(s,2,sizeof(char*),fileC);
             for (i=0; i<nrows; i++){
                 for (j=0; j<ncols; j++){
                     sprintf(s, "%f", c[i][j]);
-                    fwrite(s, 1, sizeof(c), fileC);
+                    fwrite(s, 1, sizeof(double), fileC);
                     if (j != ncols-1) fwrite(space, 1, sizeof(char), fileC);
                 }
                 fwrite(nline, 1, sizeof(char), fileC); 
@@ -160,13 +179,13 @@ int main(int argc, char* argv[])
                 MPI_Recv(&rows, 1, MPI_INT, source, 1, MPI_COMM_WORLD, &status);	
                 MPI_Recv(&a, rows*nrows, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
                 MPI_Recv(&b, brows*bcols, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
-                //printf("all info recieved...\n");
+                //printf("all info recieved...\n");     
                 for (k=0; k<ncols; k++){
                     for (i=0; i<rows; i++){
                         c[i][k] = 0; 
                         for(j=0; j<brows; j++){
                             c[i][k] += a[i][j] * b[j][k];
-                        }
+                       	}
                     }
                 }
                 printf("Multiplication from worker %d complete!\n", myid);
