@@ -68,33 +68,16 @@ int main(int argc, char* argv[])
             i = j = 0;
             for (i = 0; i < arows; i++){
             	for (j = 0; j < acols; j++){
-		    printf("%f\n",aa[i*acols+j]);
                     a[i][j]=aa[i*acols+j];
-		    printf("%f\n",a[i][j]);
             	}
 	    }
-            printf("\nMatrixB\nrows=%d, cols=%d\n",brows,bcols);
+            printf("MatrixB\nrows=%d, cols=%d\n\n",brows,bcols);
             i = j = 0;
             for (i = 0; i < brows; i++){
             	for (j = 0; j < bcols; j++){
-		     printf("%f\n",bb[i*bcols+j]);
                     b[i][j]=bb[bcols*i+j];
-		    printf("%f\n",b[i][j]);
             	}
 	    }
-
-		for (i = 0; i < arows; i++){
-                        for (j = 0; j < acols; j++){
-                                printf("a[%d][%d]=%f\n",i,j,a[i][j]);
-                        }
-                }
-
-                for (i = 0; i < brows; i++){
-                        for (j = 0; j < bcols; j++){
-                                printf("b[%d][%d]=%f\n",i,j,b[i][j]);
-                        }
-                }
-
             starttime = MPI_Wtime();
             offset = 0;
             numworkers = numprocs-1;
@@ -105,15 +88,10 @@ int main(int argc, char* argv[])
             extra = nrows%numworkers;
             for (dest=1; dest<=min(numworkers, nrows); dest++){
                 rows = (dest <= extra) ? averow+1 : averow;
-		printf("\nCheck 0\n");
                 MPI_Send(&offset, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
-		printf("\nCheck 1\n");
                 MPI_Send(&rows, 1, MPI_INT, dest, 1, MPI_COMM_WORLD);
-		printf("\nCheck 2\n");
                 MPI_Send(&a[offset][0], rows*nrows, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
-		printf("\nCheck 3\n");
                 MPI_Send(&b, brows*bcols, MPI_DOUBLE, dest, 1, MPI_COMM_WORLD);
-		printf("\nCheck 4\n");
                 offset = offset + rows;
                 totalrows -= rows;
             } 
@@ -126,17 +104,14 @@ int main(int argc, char* argv[])
                 MPI_Recv(&c[offset][0], rows*nrows, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
             }
             endtime = MPI_Wtime();
-            printf("%f\n", (endtime - starttime));
+            printf("Process time = %f\n", (endtime - starttime));
             //      mmult(cc2, aa, arows, acols, bb, brows, bcols); 
             for (i=0; i<nrows; i++){
                 for (j=0; j<ncols; j++){
                     c2[i][j] = 0;
-		    printf("c[%d][%d]= ",i,j);
                     for (k=0; k<acols; k++){
-			printf("%f * %f + ", aa[acols*i+k], bb[bcols*k+j]);
                         c2[i][j] += aa[acols*i+k] * bb[bcols*k+j];
                     }
-		    printf("\n");
                 }
 		
             }
@@ -159,15 +134,16 @@ int main(int argc, char* argv[])
             char space[] = " ";
             char nline[] = "\n";
             char s[sizeof(double)*nrows];
-	    sprintf(s,"rows(%d) cols(%d)\n",nrows,ncols);
+	    sprintf(s,"rows(%d) cols(%d)",nrows,ncols);
 	    fwrite(s,2,sizeof(char*),fileC);
+	    fwrite(nline, 1, sizeof(char), fileC);
             for (i=0; i<nrows; i++){
                 for (j=0; j<ncols; j++){
                     sprintf(s, "%f", c[i][j]);
                     fwrite(s, 1, sizeof(double), fileC);
                     if (j != ncols-1) fwrite(space, 1, sizeof(char), fileC);
                 }
-                fwrite(nline, 1, sizeof(char), fileC); 
+		fwrite(nline, 1, sizeof(char), fileC);
             }
             printf("MatrixC has been stored in file: MatrixC.txt.\n");
 
